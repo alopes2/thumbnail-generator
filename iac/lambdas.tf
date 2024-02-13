@@ -2,7 +2,7 @@ resource "aws_iam_role" "iam_for_lambda" {
   name               = "thumbnail-generator-lambda-role"
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
   inline_policy {
-    name   = "Default Policies"
+    name   = "DefaultPolicy"
     policy = data.aws_iam_policy_document.lambda_role_policies.json
   }
 }
@@ -17,7 +17,7 @@ resource "aws_lambda_function" "lambda" {
 
 data "archive_file" "lambda" {
   type        = "zip"
-  source_file = "./init_code/main"
+  source_file = "./lambda_init_code/main"
   output_path = "thumbnail_generator_lambda_function_payload.zip"
 }
 
