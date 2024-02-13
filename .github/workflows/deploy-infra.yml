@@ -11,9 +11,6 @@ defaults:
   run:
     working-directory: iac/
 
-env:
-  TF_LOG: DEBUG
-
 jobs:
   terraform:
     name: 'Terraform'
