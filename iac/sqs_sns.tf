@@ -15,7 +15,7 @@ resource "aws_sns_topic_subscription" "topic_subscription" {
 }
 
 data "aws_iam_policy_document" "sqs-queue-policy" {
-  policy_id = "${aws_sqs_queue.queue.arn}/SQSDefaultPolicy"
+  policy_id = "arn:aws:sqs:${var.region}:${var.account_id}:image-events/SQSDefaultPolicy"
 
   statement {
     sid    = "image-events-allow-send-messages"
@@ -23,7 +23,7 @@ data "aws_iam_policy_document" "sqs-queue-policy" {
 
     principals {
       type        = "Service"
-      identifiers = ["*"]
+      identifiers = ["sns.amazonaws.com"]
     }
 
     actions = [
@@ -31,7 +31,7 @@ data "aws_iam_policy_document" "sqs-queue-policy" {
     ]
 
     resources = [
-      aws_sqs_queue.queue.arn,
+      "arn:aws:sqs:${var.region}:${var.account_id}:image-events",
     ]
 
     condition {
