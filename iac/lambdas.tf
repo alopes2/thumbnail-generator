@@ -48,7 +48,7 @@ data "aws_iam_policy_document" "lambda_role_policies" {
     actions = [
       "logs:CreateLogGroup",
       "logs:CreateLogStream",
-      "logs:PutLogEvents",
+      "logs:PutLogEvents"
     ]
 
     resources = ["arn:aws:logs:*:*:*"]
@@ -58,7 +58,9 @@ data "aws_iam_policy_document" "lambda_role_policies" {
     effect = "Allow"
 
     actions = [
-      "SQS:ReceiveMessage",
+      "sqs:ReceiveMessage",
+      "sqs:DeleteMessage",
+      "sqs:GetQueueAttributes"
     ]
 
     resources = [aws_sqs_queue.queue.arn]
