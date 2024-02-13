@@ -15,7 +15,7 @@ resource "aws_sns_topic_subscription" "topic_subscription" {
 }
 
 data "aws_iam_policy_document" "sqs-queue-policy" {
-  policy_id = "arn:aws:sqs:${var.region}:${var.account_id}:movie-updates-queue/SQSDefaultPolicy"
+  policy_id = "${aws_sqs_queue.queue.arn}/SQSDefaultPolicy"
 
   statement {
     sid    = "image-events-allow-send-messages"
@@ -31,7 +31,7 @@ data "aws_iam_policy_document" "sqs-queue-policy" {
     ]
 
     resources = [
-      "arn:aws:sqs:${var.region}:${var.account_id}:movie-updates-queue",
+      aws_sqs_queue.queue.arn,
     ]
 
     condition {
