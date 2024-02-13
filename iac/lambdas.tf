@@ -53,4 +53,14 @@ data "aws_iam_policy_document" "lambda_role_policies" {
 
     resources = ["arn:aws:logs:*:*:*"]
   }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "SQS:ReceiveMessage",
+    ]
+
+    resources = [aws_sqs_queue.queue.arn]
+  }
 }
