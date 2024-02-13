@@ -37,7 +37,9 @@ data "aws_iam_policy_document" "sqs-queue-policy" {
       test     = "ArnEquals"
       variable = "aws:SourceArn"
 
-      values = aws_sns_topic.topic.arn
+      values = [
+        aws_sns_topic.topic.arn
+      ]
     }
   }
 }
