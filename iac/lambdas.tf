@@ -21,6 +21,12 @@ data "archive_file" "lambda" {
   output_path = "thumbnail_generator_lambda_function_payload.zip"
 }
 
+resource "aws_lambda_event_source_mapping" "email_notification_trigger" {
+  event_source_arn = aws_sqs_queue.queue.arn
+  function_name    = aws_lambda_function.lambda.arn
+  enabled          = true
+}
+
 data "aws_iam_policy_document" "assume_role" {
 
   statement {
