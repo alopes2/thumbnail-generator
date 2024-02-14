@@ -18,7 +18,7 @@ type awsClient struct {
 	s3 s3.Client
 }
 
-func handleRequest(ctx context.Context, event events.S3Event) error {
+func handleRequest(ctx context.Context, event events.SQSEvent) error {
 	log.Printf("Received event %v", event)
 
 	// awsConfig, err := config.LoadDefaultConfig(ctx)
