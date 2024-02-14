@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -19,35 +20,42 @@ type awsClient struct {
 	s3 s3.Client
 }
 
-func handleRequest(ctx context.Context, event events.S3Event) error {
+func handleRequest(ctx context.Context, event events.SQSEvent) error {
 	awsConfig, err := config.LoadDefaultConfig(ctx)
 
 	if err != nil {
-		log.Printf("Could not load AWS default configuration")
+		log.Fatalf("Could not load AWS default configuration")
 		return err
 	}
 
 	awsClient := awsClient{s3: *s3.NewFromConfig(awsConfig)}
 
-	log.Printf("Received S3 event %v", event)
-
 	for _, record := range event.Records {
 		log.Printf("Processing s3 event %v", record)
 
-		bucketName := record.S3.Bucket.Name
-		objectKey := record.S3.Object.Key
+		var s3EventRecord events.S3EventRecord
+
+		err := json.Unmarshal([]byte(record.Body), &s3EventRecord)
+
+		if err != nil {
+			log.Fatalf("Could not unmarshal SQS Body %s to S3 Event Record", record.Body)
+			return err
+		}
+
+		bucketName := s3EventRecord.S3.Bucket.Name
+		objectKey := s3EventRecord.S3.Object.Key
 
 		file, err := awsClient.downloadFile(bucketName, objectKey)
 
 		if err != nil {
-			log.Printf("Error loading file %s from bucket %s", objectKey, bucketName)
+			log.Fatalf("Error loading file %s from bucket %s", objectKey, bucketName)
 			return err
 		}
 
 		err = awsClient.uploadFile(bucketName, objectKey, file)
 
 		if err != nil {
-			log.Printf("Error uploading file %s to thumbnails/ in bucket %s", objectKey, bucketName)
+			log.Fatalf("Error uploading file %s to thumbnails/ in bucket %s", objectKey, bucketName)
 			return err
 		}
 	}
