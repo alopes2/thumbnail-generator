@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -51,8 +52,6 @@ func handleRequest(ctx context.Context, event events.SQSEvent) error {
 				return err
 			}
 
-			defer (*file).Close()
-
 			err = awsClient.uploadFile(bucketName, objectKey, file)
 
 			if err != nil {
@@ -65,7 +64,7 @@ func handleRequest(ctx context.Context, event events.SQSEvent) error {
 	return nil
 }
 
-func (client *awsClient) downloadFile(bucketName string, objectKey string) (*io.ReadCloser, error) {
+func (client *awsClient) downloadFile(bucketName string, objectKey string) (*bytes.Reader, error) {
 	result, err := client.s3.GetObject(*client.ctx, &s3.GetObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(objectKey),
@@ -76,10 +75,21 @@ func (client *awsClient) downloadFile(bucketName string, objectKey string) (*io.
 		return nil, err
 	}
 
-	return &result.Body, err
+	defer result.Body.Close()
+
+	body, err := io.ReadAll(result.Body)
+
+	if err != nil {
+		log.Fatalf("Error reading file. Error: %s", err)
+		return nil, err
+	}
+
+	file := bytes.NewReader(body)
+
+	return file, err
 }
 
-func (client *awsClient) uploadFile(bucketName string, originalObjectKey string, file *io.ReadCloser) error {
+func (client *awsClient) uploadFile(bucketName string, originalObjectKey string, file *bytes.Reader) error {
 
 	objectKeyParts := strings.Split(originalObjectKey, "/")
 	objectKey := fmt.Sprintf("thumbnails/%s", objectKeyParts[len(objectKeyParts)-1])
@@ -87,7 +97,7 @@ func (client *awsClient) uploadFile(bucketName string, originalObjectKey string,
 	response, err := client.s3.PutObject(*client.ctx, &s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(objectKey),
-		Body:   *file,
+		Body:   file,
 	})
 
 	log.Printf("Response from PUT %v", response)
