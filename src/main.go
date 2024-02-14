@@ -31,17 +31,18 @@ func handleRequest(ctx context.Context, event events.SQSEvent) error {
 	awsClient := awsClient{s3: *s3.NewFromConfig(awsConfig)}
 
 	for _, record := range event.Records {
-		log.Printf("Processing s3 event %v", record)
-
+		log.Printf("Processing SQS record %v", record)
 		var s3EventRecord events.S3EventRecord
 
 		err := json.Unmarshal([]byte(record.Body), &s3EventRecord)
 
+		log.Printf("Unmarshalled s3 event %v", s3EventRecord)
 		if err != nil {
 			log.Fatalf("Could not unmarshal SQS Body %s to S3 Event Record", record.Body)
 			return err
 		}
 
+		log.Printf("S3 %v", s3EventRecord.S3)
 		bucketName := s3EventRecord.S3.Bucket.Name
 		objectKey := s3EventRecord.S3.Object.Key
 
