@@ -65,4 +65,28 @@ data "aws_iam_policy_document" "lambda_role_policies" {
 
     resources = [aws_sqs_queue.queue.arn]
   }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "s3:GetObject",
+    ]
+
+    resources = [
+      format("%s/%s*", aws_s3_bucket.my-app-images.arn, aws_s3_object.images_folder.key)
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "s3:PutOjbect",
+    ]
+
+    resources = [
+      format("%s/%s*", aws_s3_bucket.my-app-images.arn, aws_s3_object.thumbnails_folder.key)
+    ]
+  }
 }
