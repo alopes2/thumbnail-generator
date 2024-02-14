@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -17,7 +18,7 @@ type awsClient struct {
 	s3 s3.Client
 }
 
-func handleRequest(ctx context.Context, event interface{}) error {
+func handleRequest(ctx context.Context, event events.S3Event) error {
 	log.Printf("Received event %v", event)
 
 	// awsConfig, err := config.LoadDefaultConfig(ctx)
