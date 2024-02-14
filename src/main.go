@@ -2,17 +2,14 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"strings"
 
-	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
@@ -20,46 +17,48 @@ type awsClient struct {
 	s3 s3.Client
 }
 
-func handleRequest(ctx context.Context, event events.SQSEvent) error {
-	awsConfig, err := config.LoadDefaultConfig(ctx)
+func handleRequest(ctx context.Context, event interface{}) error {
+	log.Printf("Received event %v", event)
 
-	if err != nil {
-		log.Fatalf("Could not load AWS default configuration")
-		return err
-	}
+	// awsConfig, err := config.LoadDefaultConfig(ctx)
 
-	awsClient := awsClient{s3: *s3.NewFromConfig(awsConfig)}
+	// if err != nil {
+	// 	log.Fatalf("Could not load AWS default configuration")
+	// 	return err
+	// }
 
-	for _, record := range event.Records {
-		log.Printf("Processing SQS record %v", record)
-		var s3EventRecord events.S3EventRecord
+	// awsClient := awsClient{s3: *s3.NewFromConfig(awsConfig)}
 
-		err := json.Unmarshal([]byte(record.Body), &s3EventRecord)
+	// for _, record := range event.Records {
+	// 	log.Printf("Processing SQS record %v", record)
+	// 	var s3EventRecord events.S3EventRecord
 
-		log.Printf("Unmarshalled s3 event %v", s3EventRecord)
-		if err != nil {
-			log.Fatalf("Could not unmarshal SQS Body %s to S3 Event Record", record.Body)
-			return err
-		}
+	// 	err := json.Unmarshal([]byte(record.Body), &s3EventRecord)
 
-		log.Printf("S3 %v", s3EventRecord.S3)
-		bucketName := s3EventRecord.S3.Bucket.Name
-		objectKey := s3EventRecord.S3.Object.Key
+	// 	log.Printf("Unmarshalled s3 event %v", s3EventRecord)
+	// 	if err != nil {
+	// 		log.Fatalf("Could not unmarshal SQS Body %s to S3 Event Record", record.Body)
+	// 		return err
+	// 	}
 
-		file, err := awsClient.downloadFile(bucketName, objectKey)
+	// 	log.Printf("S3 %v", s3EventRecord.S3)
+	// 	bucketName := s3EventRecord.S3.Bucket.Name
+	// 	objectKey := s3EventRecord.S3.Object.Key
 
-		if err != nil {
-			log.Fatalf("Error loading file %s from bucket %s", objectKey, bucketName)
-			return err
-		}
+	// 	file, err := awsClient.downloadFile(bucketName, objectKey)
 
-		err = awsClient.uploadFile(bucketName, objectKey, file)
+	// 	if err != nil {
+	// 		log.Fatalf("Error loading file %s from bucket %s", objectKey, bucketName)
+	// 		return err
+	// 	}
 
-		if err != nil {
-			log.Fatalf("Error uploading file %s to thumbnails/ in bucket %s", objectKey, bucketName)
-			return err
-		}
-	}
+	// 	err = awsClient.uploadFile(bucketName, objectKey, file)
+
+	// 	if err != nil {
+	// 		log.Fatalf("Error uploading file %s to thumbnails/ in bucket %s", objectKey, bucketName)
+	// 		return err
+	// 	}
+	// }
 
 	return nil
 }
