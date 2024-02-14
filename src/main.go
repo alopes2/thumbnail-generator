@@ -19,7 +19,8 @@ type awsClient struct {
 }
 
 func handleRequest(ctx context.Context, event events.SQSEvent) error {
-	log.Printf("Received event %v", event)
+	log.Printf("Received event records %v", event.Records)
+	log.Printf("Received event first record %v", event.Records[0].Body)
 
 	// awsConfig, err := config.LoadDefaultConfig(ctx)
 
