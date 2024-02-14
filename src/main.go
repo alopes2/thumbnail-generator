@@ -29,6 +29,8 @@ func handleRequest(ctx context.Context, event events.S3Event) error {
 
 	awsClient := awsClient{s3: *s3.NewFromConfig(awsConfig)}
 
+	log.Printf("Received S3 event %v", event)
+
 	for _, record := range event.Records {
 		log.Printf("Processing s3 event %v", record)
 
