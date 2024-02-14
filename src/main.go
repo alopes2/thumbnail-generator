@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -51,6 +50,8 @@ func handleRequest(ctx context.Context, event events.SQSEvent) error {
 				return err
 			}
 
+			defer (*file).Close()
+
 			err = awsClient.uploadFile(bucketName, objectKey, file)
 
 			if err != nil {
@@ -63,42 +64,21 @@ func handleRequest(ctx context.Context, event events.SQSEvent) error {
 	return nil
 }
 
-func (client *awsClient) downloadFile(bucketName string, objectKey string) (*os.File, error) {
-	fileName := ""
-
+func (client *awsClient) downloadFile(bucketName string, objectKey string) (*io.ReadCloser, error) {
 	result, err := client.s3.GetObject(context.TODO(), &s3.GetObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(objectKey),
 	})
 
 	if err != nil {
-		log.Printf("Couldn't get object %v:%v. Here's why: %v\n", bucketName, objectKey, err)
+		log.Fatalf("Couldn't get object %v:%v. Here's why: %v\n", bucketName, objectKey, err)
 		return nil, err
 	}
 
-	defer result.Body.Close()
-
-	file, err := os.Create(fileName)
-
-	if err != nil {
-		log.Printf("Couldn't create file %v. Here's why: %v\n", fileName, err)
-		return nil, err
-	}
-
-	body, err := io.ReadAll(result.Body)
-
-	if err != nil {
-		log.Printf("Couldn't read object body from %v. Here's why: %v\n", objectKey, err)
-	}
-
-	_, err = file.Write(body)
-
-	return file, err
+	return &result.Body, err
 }
 
-func (client *awsClient) uploadFile(bucketName string, originalObjectKey string, file *os.File) error {
-
-	defer file.Close()
+func (client *awsClient) uploadFile(bucketName string, originalObjectKey string, file *io.ReadCloser) error {
 
 	objectKeyParts := strings.Split(originalObjectKey, "/")
 	objectKey := fmt.Sprintf("thumbnails/%s", objectKeyParts[len(objectKeyParts)-1])
@@ -106,11 +86,11 @@ func (client *awsClient) uploadFile(bucketName string, originalObjectKey string,
 	_, err := client.s3.PutObject(context.TODO(), &s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(objectKey),
-		Body:   file,
+		Body:   *file,
 	})
 
 	if err != nil {
-		log.Printf("Couldn't upload file %v to %v:%v. Here's why: %v\n",
+		log.Fatalf("Couldn't upload file %v to %v:%v. Here's why: %v\n",
 			originalObjectKey, bucketName, objectKey, err)
 	}
 
