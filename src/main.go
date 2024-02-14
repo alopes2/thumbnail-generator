@@ -16,7 +16,8 @@ import (
 )
 
 type awsClient struct {
-	s3 s3.Client
+	s3  s3.Client
+	ctx *context.Context
 }
 
 func handleRequest(ctx context.Context, event events.SQSEvent) error {
@@ -27,7 +28,7 @@ func handleRequest(ctx context.Context, event events.SQSEvent) error {
 		return err
 	}
 
-	awsClient := awsClient{s3: *s3.NewFromConfig(awsConfig)}
+	awsClient := awsClient{s3: *s3.NewFromConfig(awsConfig), ctx: &ctx}
 
 	for _, record := range event.Records {
 		var imageEvent events.S3Event
@@ -65,7 +66,7 @@ func handleRequest(ctx context.Context, event events.SQSEvent) error {
 }
 
 func (client *awsClient) downloadFile(bucketName string, objectKey string) (*io.ReadCloser, error) {
-	result, err := client.s3.GetObject(context.TODO(), &s3.GetObjectInput{
+	result, err := client.s3.GetObject(*client.ctx, &s3.GetObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(objectKey),
 	})
@@ -83,11 +84,13 @@ func (client *awsClient) uploadFile(bucketName string, originalObjectKey string,
 	objectKeyParts := strings.Split(originalObjectKey, "/")
 	objectKey := fmt.Sprintf("thumbnails/%s", objectKeyParts[len(objectKeyParts)-1])
 
-	_, err := client.s3.PutObject(context.TODO(), &s3.PutObjectInput{
+	response, err := client.s3.PutObject(*client.ctx, &s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(objectKey),
 		Body:   *file,
 	})
+
+	log.Printf("Response from PUT %v", response)
 
 	if err != nil {
 		log.Fatalf("Couldn't upload file %v to %v:%v. Here's why: %v\n",
