@@ -82,7 +82,7 @@ data "aws_iam_policy_document" "lambda_role_policies" {
     effect = "Allow"
 
     actions = [
-      "s3:PutOjbect",
+      "s3:PutObject",
     ]
 
     resources = [

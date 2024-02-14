@@ -94,13 +94,11 @@ func (client *awsClient) uploadFile(bucketName string, originalObjectKey string,
 	objectKeyParts := strings.Split(originalObjectKey, "/")
 	objectKey := fmt.Sprintf("thumbnails/%s", objectKeyParts[len(objectKeyParts)-1])
 
-	response, err := client.s3.PutObject(*client.ctx, &s3.PutObjectInput{
+	_, err := client.s3.PutObject(*client.ctx, &s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(objectKey),
 		Body:   file,
 	})
-
-	log.Printf("Response from PUT %v", response)
 
 	if err != nil {
 		log.Fatalf("Couldn't upload file %v to %v:%v. Here's why: %v\n",
