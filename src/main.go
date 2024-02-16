@@ -50,7 +50,7 @@ func handleRequest(ctx context.Context, event events.SNSEvent) error {
 
 			file, err := awsClient.downloadFile(bucketName, objectKey)
 
-			log.Println("Successfully downloaded image")
+			log.Printf("Successfully downloaded image")
 
 			if err != nil {
 				log.Fatalf("Error loading file %s from bucket %s", objectKey, bucketName)
@@ -64,11 +64,11 @@ func handleRequest(ctx context.Context, event events.SNSEvent) error {
 				return err
 			}
 
-			log.Println("Successfully created thumbnail")
+			log.Printf("Successfully created thumbnail")
 
 			err = awsClient.uploadFile(bucketName, objectKey, thumbnail)
 
-			log.Println("Successfully uploaded thumbnail")
+			log.Printf("Successfully uploaded thumbnail")
 
 			if err != nil {
 				log.Fatalf("Error uploading file %s to thumbnails/ in bucket %s", objectKey, bucketName)
