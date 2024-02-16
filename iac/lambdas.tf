@@ -13,6 +13,7 @@ resource "aws_lambda_function" "lambda" {
   role          = aws_iam_role.iam_for_lambda.arn
   handler       = "main"
   runtime       = "go1.x"
+  timeout       = 15
 }
 
 resource "aws_sns_topic_subscription" "topic_subscription" {
