@@ -4,10 +4,9 @@ resource "aws_sns_topic" "topic" {
 }
 
 resource "aws_sns_topic_subscription" "topic_subscription" {
-  topic_arn            = aws_sns_topic.topic.arn
-  protocol             = "lambda"
-  endpoint             = aws_lambda_function.lambda.arn
-  raw_message_delivery = true
+  topic_arn = aws_sns_topic.topic.arn
+  protocol  = "lambda"
+  endpoint  = aws_lambda_function.lambda.arn
 }
 
 resource "aws_lambda_permission" "apigw_lambda" {
