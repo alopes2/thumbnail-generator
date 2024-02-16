@@ -127,7 +127,8 @@ func (client *awsClient) downloadFile(bucketName string, objectKey string) (*byt
 func (client *awsClient) uploadFile(bucketName string, originalObjectKey string, thumbnail io.Reader) error {
 
 	objectKeyParts := strings.Split(originalObjectKey, "/")
-	objectKey := fmt.Sprintf("thumbnails/%s", objectKeyParts[len(objectKeyParts)-1])
+	fileNameWithoutExtensions := strings.Split(objectKeyParts[len(objectKeyParts)-1], ".")[0]
+	objectKey := fmt.Sprintf("thumbnails/%s_thumbnail.png", fileNameWithoutExtensions)
 
 	_, err := client.s3.PutObject(*client.ctx, &s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
