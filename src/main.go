@@ -57,7 +57,12 @@ func handleRequest(ctx context.Context, event events.SNSEvent) error {
 				return err
 			}
 
-			thumbnail := createThumbnail(file)
+			thumbnail, err := createThumbnail(file)
+
+			if err != nil {
+				log.Fatalf("Error creating thumbnail for file %s from bucket %s. Error is %v", objectKey, bucketName, err)
+				return err
+			}
 
 			log.Println("Successfully created thumbnail")
 
@@ -75,17 +80,23 @@ func handleRequest(ctx context.Context, event events.SNSEvent) error {
 	return nil
 }
 
-func createThumbnail(reader io.Reader) *bytes.Buffer {
-	srcImage, _, _ := image.Decode(reader)
+func createThumbnail(reader io.Reader) (*bytes.Buffer, error) {
+	srcImage, _, err := image.Decode(reader)
 
+	if err != nil {
+		log.Fatalf("Could not decode file because of error %v", err)
+		return nil, err
+	}
+
+	// Generates a 80x80 thumbnail
 	thumbnail := imaging.Thumbnail(srcImage, 80, 80, imaging.Lanczos)
 
 	var bufferBytes []byte
 	buffer := bytes.NewBuffer(bufferBytes)
 
-	png.Encode(buffer, thumbnail)
+	err = png.Encode(buffer, thumbnail)
 
-	return buffer
+	return buffer, err
 }
 
 func (client *awsClient) downloadFile(bucketName string, objectKey string) (*bytes.Reader, error) {
