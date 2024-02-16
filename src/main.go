@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/png"
 	"io"
 	"log"
 	"strings"
@@ -14,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/disintegration/imaging"
 )
 
 type awsClient struct {
@@ -22,7 +25,6 @@ type awsClient struct {
 }
 
 func handleRequest(ctx context.Context, event events.SNSEvent) error {
-	log.Printf("Got event %v", event)
 	awsConfig, err := config.LoadDefaultConfig(ctx)
 
 	if err != nil {
@@ -38,7 +40,7 @@ func handleRequest(ctx context.Context, event events.SNSEvent) error {
 		err := json.Unmarshal([]byte(record.SNS.Message), &imageEvent)
 
 		if err != nil {
-			log.Fatalf("Could not unmarshal SQS Body %s to S3 Event Record", record.SNS.Message)
+			log.Fatalf("Could not unmarshal SNS message %s into S3 Event Record with error: %v", record.SNS.Message, err)
 			return err
 		}
 
@@ -53,7 +55,9 @@ func handleRequest(ctx context.Context, event events.SNSEvent) error {
 				return err
 			}
 
-			err = awsClient.uploadFile(bucketName, objectKey, file)
+			thumbnail := createThumbnail(file)
+
+			err = awsClient.uploadFile(bucketName, objectKey, thumbnail)
 
 			if err != nil {
 				log.Fatalf("Error uploading file %s to thumbnails/ in bucket %s", objectKey, bucketName)
@@ -65,6 +69,19 @@ func handleRequest(ctx context.Context, event events.SNSEvent) error {
 	return nil
 }
 
+func createThumbnail(reader io.Reader) *bytes.Buffer {
+	srcImage, _, _ := image.Decode(reader)
+
+	thumbnail := imaging.Thumbnail(srcImage, 80, 80, imaging.Lanczos)
+
+	var bufferBytes []byte
+	buffer := bytes.NewBuffer(bufferBytes)
+
+	png.Encode(buffer, thumbnail)
+
+	return buffer
+}
+
 func (client *awsClient) downloadFile(bucketName string, objectKey string) (*bytes.Reader, error) {
 	result, err := client.s3.GetObject(*client.ctx, &s3.GetObjectInput{
 		Bucket: aws.String(bucketName),
@@ -72,7 +89,7 @@ func (client *awsClient) downloadFile(bucketName string, objectKey string) (*byt
 	})
 
 	if err != nil {
-		log.Fatalf("Couldn't get object %v:%v. Here's why: %v\n", bucketName, objectKey, err)
+		log.Fatalf("Couldn't get object %v:%v. Here's why: %v", bucketName, objectKey, err)
 		return nil, err
 	}
 
@@ -90,7 +107,7 @@ func (client *awsClient) downloadFile(bucketName string, objectKey string) (*byt
 	return file, err
 }
 
-func (client *awsClient) uploadFile(bucketName string, originalObjectKey string, file *bytes.Reader) error {
+func (client *awsClient) uploadFile(bucketName string, originalObjectKey string, thumbnail io.Reader) error {
 
 	objectKeyParts := strings.Split(originalObjectKey, "/")
 	objectKey := fmt.Sprintf("thumbnails/%s", objectKeyParts[len(objectKeyParts)-1])
@@ -98,7 +115,7 @@ func (client *awsClient) uploadFile(bucketName string, originalObjectKey string,
 	_, err := client.s3.PutObject(*client.ctx, &s3.PutObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(objectKey),
-		Body:   file,
+		Body:   thumbnail,
 	})
 
 	if err != nil {
