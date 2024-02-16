@@ -1,8 +1,3 @@
-resource "aws_sqs_queue" "queue" {
-  name   = "image-events"
-  policy = data.aws_iam_policy_document.sqs-queue-policy.json
-}
-
 resource "aws_sns_topic" "topic" {
   name   = "image-events"
   policy = data.aws_iam_policy_document.sns-topic-policy.json
@@ -10,42 +5,18 @@ resource "aws_sns_topic" "topic" {
 
 resource "aws_sns_topic_subscription" "topic_subscription" {
   topic_arn            = aws_sns_topic.topic.arn
-  protocol             = "sqs"
-  endpoint             = aws_sqs_queue.queue.arn
+  protocol             = "lambda"
+  endpoint             = aws_lambda_function.lambda.arn
   raw_message_delivery = true
 }
 
-data "aws_iam_policy_document" "sqs-queue-policy" {
-  policy_id = "arn:aws:sqs:${var.region}:${var.account_id}:image-events/SQSDefaultPolicy"
-
-  statement {
-    sid    = "image-events-allow-send-messages"
-    effect = "Allow"
-
-    principals {
-      type        = "Service"
-      identifiers = ["sns.amazonaws.com"]
-    }
-
-    actions = [
-      "SQS:SendMessage",
-    ]
-
-    resources = [
-      "arn:aws:sqs:${var.region}:${var.account_id}:image-events",
-    ]
-
-    condition {
-      test     = "ArnEquals"
-      variable = "aws:SourceArn"
-
-      values = [
-        aws_sns_topic.topic.arn
-      ]
-    }
-  }
+resource "aws_lambda_permission" "apigw_lambda" {
+  statement_id  = "AllowExecutionFromSNS"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda.arn
+  principal     = "sns.amazonaws.com"
+  source_arn    = aws_sns_topic.topic.arn
 }
-
 
 data "aws_iam_policy_document" "sns-topic-policy" {
   policy_id = "arn:aws:sns:${var.region}:${var.account_id}:image-events/SNSS3NotificationPolicy"
